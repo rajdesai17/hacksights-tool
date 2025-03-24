@@ -28,16 +28,18 @@ export async function extractHackathonDetails(url: string) {
     - Prize pool (total prize amount in USD or INR)
     - Whether PPT submission is required (look for submission requirements)
 
+    If any field is missing, use "Not Available" as the value.
+
     Return ONLY a valid JSON with no additional text or explanations:
     {
       "name": "actual name",
       "mode": "Online or Offline",
-      "venue": "actual venue or null",
-      "startDate": "actual start date",
-      "endDate": "actual end date", 
-      "registrationDeadline": "actual deadline",
-      "teamSize": "actual team size",
-      "prizePool": "actual prize amount",
+      "venue": "actual venue or Not Available",
+      "startDate": "actual start date or Not Available",
+      "endDate": "actual end date or Not Available", 
+      "registrationDeadline": "actual deadline or Not Available",
+      "teamSize": "actual team size or Not Available",
+      "prizePool": "actual prize amount or Not Available",
       "pptRequired": true or false
     }`;
 
@@ -54,10 +56,10 @@ export async function extractHackathonDetails(url: string) {
 
     // Validate required fields
     const requiredFields = ['name', 'mode', 'startDate', 'endDate', 'registrationDeadline', 'teamSize', 'prizePool'];
-    const missingFields = requiredFields.filter(field => !data[field]);
+    const missingFields = requiredFields.filter(field => !data[field] || data[field] === "Not Available");
     
     if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      console.warn(`Missing fields: ${missingFields.join(', ')}`);
     }
 
     // Convert prize pool to INR if it's in USD
