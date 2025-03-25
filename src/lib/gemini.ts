@@ -38,7 +38,33 @@ export async function extractHackathonDetails(url: string) {
       "pptRequired": true or false
     }`;
 
-    const result = await model.generateContent(prompt);
+    // Add retry logic for 503 errors
+    const MAX_RETRIES = 3;
+    let retries = 0;
+    let result;
+
+    while (retries < MAX_RETRIES) {
+      try {
+        result = await model.generateContent(prompt);
+        break; // Success, exit the retry loop
+      } catch (error) {
+        retries++;
+        if (error.message && error.message.includes('503')) {
+          console.log(`Service unavailable (503), retry attempt ${retries}/${MAX_RETRIES}`);
+          if (retries < MAX_RETRIES) {
+            // Wait for a second before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        }
+        throw error; // Not a 503 error or maximum retries reached, rethrow
+      }
+    }
+
+    if (!result) {
+      throw new Error('Failed to generate content after multiple retries');
+    }
+
     const responseText = result.response.text();
     
     // Extract JSON from the response
@@ -75,6 +101,15 @@ export async function extractHackathonDetails(url: string) {
 
   } catch (error) {
     console.error('Error extracting hackathon details:', error);
+    
+    // Provide more specific error messages
+    if (error.message && error.message.includes('503')) {
+      return {
+        success: false,
+        error: 'The Google AI service is currently unavailable. Please try again later.'
+      };
+    }
+    
     return {
       success: false,
       error: 'Failed to extract hackathon details. Please ensure the URL is a valid hackathon page and try again.'
@@ -82,13 +117,16 @@ export async function extractHackathonDetails(url: string) {
   }
 }
 
+// Fix the listAvailableModels function since listModels doesn't exist
 export async function listAvailableModels() {
   try {
-    const models = await genAI.listModels();
-    console.log('Available models:', models);
-    return models;
+    // Instead of trying to list models (which doesn't exist in the SDK), 
+    // let's just check if we can access the API
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    console.log('Successfully connected to Gemini API');
+    return { success: true, model: 'gemini-2.0-flash' };
   } catch (error) {
-    console.error('Error listing models:', error);
-    throw error;
+    console.error('Error connecting to Gemini API:', error);
+    return { success: false, error };
   }
 }

@@ -11,7 +11,10 @@ export default function HackathonForm() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    listAvailableModels();
+    // Just call it, but don't worry about errors
+    listAvailableModels().catch(err => {
+      console.log("Could not connect to Gemini API", err);
+    });
   }, []);
 
   const handleExtractDetails = async (e: React.FormEvent) => {
